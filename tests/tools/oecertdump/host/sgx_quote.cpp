@@ -111,6 +111,53 @@ void output_certificate_chain(const uint8_t* data, size_t data_len)
         result = ParseSGXExtensions(
             &leaf_cert, buffer, &buffer_size, &extension_info);
     }
+    printf(
+        "\n    parsed qe certificate extension (%s) {\n",
+        SGX_EXTENSION_OID_STR);
+    printf("        ppid (hex): ");
+    oe_hex_dump(extension_info.ppid, OE_COUNTOF(extension_info.ppid));
+    printf("        comp_svn (hex): ");
+    oe_hex_dump(extension_info.comp_svn, OE_COUNTOF(extension_info.comp_svn));
+    printf("        pce_svn: 0x%x\n", extension_info.pce_svn);
+    printf("        cpu_svn (hex): ");
+    oe_hex_dump(extension_info.cpu_svn, OE_COUNTOF(extension_info.cpu_svn));
+    printf("        pce_id (hex): ");
+    oe_hex_dump(extension_info.pce_id, OE_COUNTOF(extension_info.pce_id));
+    printf("        fmspc (hex): ");
+    oe_hex_dump(extension_info.fmspc, OE_COUNTOF(extension_info.fmspc));
+    printf("        sgx_type: %d\n", extension_info.sgx_type);
+    printf("        opt_platform_instance_id (hex): ");
+    oe_hex_dump(
+        extension_info.opt_platform_instance_id,
+        OE_COUNTOF(extension_info.opt_platform_instance_id));
+    printf(
+        "        opt_dynamic_platform: %s\n",
+        extension_info.opt_dynamic_platform ? "true" : "false");
+    printf(
+        "        opt_cached_keys: %s\n",
+        extension_info.opt_cached_keys ? "true" : "false");
+    printf(
+        "        opt_smt_enabled: %s\n",
+        extension_info.opt_smt_enabled ? "true" : "false");
+    printf("    } qe cert extension \n");
+done:
+    free(buffer);
+    oe_cert_chain_free(&cert_chain);
+    oe_cert_free(&leaf_cert);
+}
+
+void output_certificate_chain(
+    const uint8_t* data,
+    size_t data_len,
+    bool is_report_buffer)
+{
+    const char* pem = (char*)data;
+    // This test tools output certificate chain in two scenarios:
+    // 1. Log certificate chain in endorsement buffer to log file
+    // 2. Print certificate chain in report buffer in verbose mode to stdout
+    // Only the leaf certificate in report buffer contains sgx extension
+    bool leaf_cert_extension = is_report_buffer;
+    FILE* file = is_report_buffer ? stdout : log_file;
 
     // print decoded PEM certificate chain
     while (*pem)
